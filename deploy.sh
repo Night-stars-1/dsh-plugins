@@ -63,7 +63,7 @@ DSH_TRUSTED_HOSTS=${DSH_TRUSTED_HOSTS:-}
 # 对外发布的端口。
 DSH_PORT=${DSH_PORT:-8080}
 EOF
-    echo "[deploy] 已生成 $WORKDIR/.env（访问密钥：$key）"
+    echo "[deploy] 已生成 $WORKDIR/.env（访问密钥：${key}）"
   fi
   if [ -z "$(env_value DEEPSEEK_API_KEY)" ]; then
     echo "[deploy] 警告：.env 里 DEEPSEEK_API_KEY 为空——界面可用，但聊天会失败"
