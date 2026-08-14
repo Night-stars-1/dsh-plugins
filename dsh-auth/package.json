@@ -1,0 +1,62 @@
+{
+  "name": "@night-stars-1/dsh-host-auth",
+  "description": "Third-party dsh Web account plugin: /api/auth register/login endpoints, durable scrypt-hashed users via storage-domain, cookie sessions, a served /login page, and the webServer guard gating /api",
+  "version": "0.1.0",
+  "author": "Night-stars-1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Night-stars-1/dsh-plugins.git",
+    "directory": "dsh-auth"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json",
+    "./client": "./lib/client.js"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/build-client.mjs",
+    "test": "vitest run"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-brand": "*",
+    "@deepseek-ai/dsh-host-webserver": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.1",
+    "@deepseek-ai/dsh-brand": "0.0.1-rc.5",
+    "@deepseek-ai/dsh-host-webserver": "0.0.1-rc.5",
+    "@deepseek-ai/dsh-storage": "0.0.1-rc.5",
+    "@deepseek-ai/dsh-storage-domain": "0.0.1-rc.5",
+    "@deepseek-ai/dsh-storage-json": "0.0.1-rc.5",
+    "@deepseek-ai/schemastery": "3.18.1",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  },
+  "dsh": {
+    "client": {
+      "inject": [],
+      "platform": "web"
+    }
+  }
+}
