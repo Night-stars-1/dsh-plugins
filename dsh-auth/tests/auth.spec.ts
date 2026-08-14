@@ -367,6 +367,23 @@ describe('allowRemoteAdmin', () => {
     expect(remoteManage.body).toContain('loopback-only')
   })
 
+  it('on: rewrites an attached Origin to match the loopback Host', async () => {
+    // A browser POST carries Origin; the connection plugin's trust fence
+    // demands Origin === Host, so the rewrite must keep both consistent or
+    // an authenticated remote POST would 403 on the mismatch.
+    const port = await boot({ allowRemoteAdmin: true, trustedHosts: ['ds.example.com'] })
+    ctx.get('webServer')!.register({
+      kind: 'exact',
+      path: '/api/echo-origin',
+      handler: (req, res) => { res.writeHead(200); res.end(req.headers.origin ?? '') },
+    })
+    const cookie = await login(port)
+    const echoed = await rawRequest(port, '/api/echo-origin', {
+      headers: { host: 'ds.example.com', origin: 'http://ds.example.com', cookie },
+    })
+    expect(echoed.body).toBe(`http://127.0.0.1:${port}`)
+  })
+
   it('on: an unauthenticated /api request is still refused (no rewrite before auth)', async () => {
     const port = await boot({ allowRemoteAdmin: true })
     mountEchoHost()

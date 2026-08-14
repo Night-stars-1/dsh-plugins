@@ -67,7 +67,8 @@ export interface Config {
   /**
    * Open dsh's loopback-pinned privileged /api methods (settings,
    * credentials, directory picking, preset authoring) to authenticated
-   * remote sessions by presenting a loopback Host to the downstream handler.
+   * remote sessions by presenting a loopback authority (Host and Origin) to
+   * the downstream handler.
    * The rewrite happens only after this guard confirms a valid session
    * cookie, and only for the request object passed downstream; the guard's
    * own decisions (including /api/auth key management) read the original
@@ -358,6 +359,12 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
         // 让 dsh 的特权面接受这个已认证的调用者。默认关闭。
         if (config.allowRemoteAdmin && isApiPath(pathname)) {
           req.headers.host = loopbackAuthority()
+          // connection 插件的信任栅栏要求 Origin 与 Host 一致：浏览器对每个
+          // 非 GET/HEAD 请求都携带 Origin，若不随之重写，重写后的回环 Host 会
+          // 因 Origin 不匹配而把已认证的远程 POST 一律 403。
+          if (typeof req.headers.origin === 'string') {
+            req.headers.origin = `http://${loopbackAuthority()}`
+          }
         }
         return true
       }
