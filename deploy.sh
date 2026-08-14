@@ -98,7 +98,12 @@ case "$cmd" in
     echo "   配置文件: $WORKDIR/.env（改后执行 bash deploy.sh restart）"
     ;;
   down)     docker compose down ;;
-  restart)  docker compose restart && wait_ready "$(port)" && echo "[deploy] 已重启" ;;
+  restart)
+    # 用 up -d 而不是 docker compose restart：后者不会重新读取 .env，
+    # 环境变量（如 DSH_TRUSTED_HOSTS）的修改必须重建容器才生效。
+    docker compose up -d --force-recreate
+    wait_ready "$(port)" && echo "[deploy] 已重启（.env 已重新应用）"
+    ;;
   logs)     docker compose logs -f ;;
   status)
     docker compose ps
