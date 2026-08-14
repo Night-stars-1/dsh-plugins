@@ -46,6 +46,9 @@ if [ ! -s "$PATCH" ] || grep -qx '\[\]' "$PATCH"; then
         accessKeys: !!js (process.env.DSH_WEB_ACCESS_KEY || '').split(' ').filter(Boolean)
         sessionTtlMs: 604800000
         trustedHosts: !!js ctx.webRuntime.trustedHosts
+        # 由 .env 的 DSH_ALLOW_REMOTE_ADMIN 控制（true/1/yes/on 为开）：
+        # 开启后已认证的远程会话可访问设置/凭据等特权面，密钥管理仍仅限本机。
+        allowRemoteAdmin: !!js (['1','true','yes','on'].indexOf((process.env.DSH_ALLOW_REMOTE_ADMIN || '').toLowerCase()) >= 0)
 
 # 工作区目录选择固定为浏览器内模式（容器里不存在原生文件对话框）。
 - id: directory-picker
@@ -56,6 +59,13 @@ if [ ! -s "$PATCH" ] || grep -qx '\[\]' "$PATCH"; then
     - id: ui-directory-picker-browse
       name: '@deepseek-ai/dsh-client-ui-directory-picker-browse'
 YAML
+fi
+
+# 兼容旧数据卷：host-auth 块缺少 allowRemoteAdmin 行时，在 sessionTtlMs 后补上
+# （表达式读 DSH_ALLOW_REMOTE_ADMIN，值仍由环境变量控制）。幂等：已有则跳过。
+if grep -q "id: host-auth" "$PATCH" && ! grep -q "allowRemoteAdmin:" "$PATCH"; then
+  echo "[entrypoint] 迁移旧补丁：补上 allowRemoteAdmin 配置行"
+  sed -i "s|\(sessionTtlMs: 604800000\)|\1\n        allowRemoteAdmin: !!js (['1','true','yes','on'].indexOf((process.env.DSH_ALLOW_REMOTE_ADMIN || '').toLowerCase()) >= 0)|" "$PATCH"
 fi
 
 # 全接口绑定块：让 dsh 直接监听 0.0.0.0:3080，端口映射即可到达（无需 socat）。

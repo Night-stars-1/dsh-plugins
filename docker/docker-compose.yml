@@ -21,6 +21,9 @@ services:
       # 设为 1 时，容器启动会把插件升级到 npm 最新版（保留数据）。
       # deploy.sh update 会临时置 1 跑一次；平时留空。
       DSH_PLUGIN_UPDATE: ${DSH_PLUGIN_UPDATE:-}
+      # 设为 true/1/yes/on 时，已认证的远程会话可访问设置/凭据等特权面
+      # （密钥管理仍仅限本机）。改后执行 bash deploy.sh restart 生效。
+      DSH_ALLOW_REMOTE_ADMIN: ${DSH_ALLOW_REMOTE_ADMIN:-}
     restart: unless-stopped
 
 volumes:

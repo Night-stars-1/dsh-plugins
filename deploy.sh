@@ -60,6 +60,9 @@ DSH_WEB_ACCESS_KEY=$key
 # 信任栅栏额外接受的主机，空格分隔，
 # 例如 "192.168.1.5:8080 chat.example.com"。
 DSH_TRUSTED_HOSTS=${DSH_TRUSTED_HOSTS:-}
+# 设为 true 时，已认证的远程会话可访问设置/凭据等特权面（密钥管理仍仅限本机）。
+# 会削弱 dsh 的回环安全默认值——务必配合强密钥与 HTTPS 使用。
+DSH_ALLOW_REMOTE_ADMIN=${DSH_ALLOW_REMOTE_ADMIN:-}
 # 对外发布的端口。
 DSH_PORT=${DSH_PORT:-8080}
 EOF
