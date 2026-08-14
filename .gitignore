@@ -2,3 +2,5 @@ node_modules/
 lib/
 *.log
 .DS_Store
+docker/.env
+docker/workspace/

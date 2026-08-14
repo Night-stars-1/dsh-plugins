@@ -1,10 +1,12 @@
+name: dsh
+
 services:
   dsh:
     build:
       context: ..
       dockerfile: docker/Dockerfile
     ports:
-      - "8080:8080"
+      - "${DSH_PORT:-8080}:8080"
     volumes:
       # Harness home: access keys, sessions, settings, the web profile.
       - dsh-data:/data
