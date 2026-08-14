@@ -25,6 +25,7 @@ const BASE_CONFIG = {
   accessKeys: [RIGHT_KEY, SECOND_KEY],
   sessionTtlMs: 3_600_000,
   trustedHosts: [] as string[],
+  allowRemoteAdmin: false,
 }
 
 let root: string
@@ -321,6 +322,56 @@ describe('page-managed keys', () => {
       headers: { host: 'harness.internal:9999' },
     })
     expect(remoteStatus.body).toContain('"canManageKey":false')
+  })
+})
+
+describe('allowRemoteAdmin', () => {
+  // Register an /api route that echoes the Host the guard passed downstream.
+  function mountEchoHost(): void {
+    ctx.get('webServer')!.register({
+      kind: 'exact',
+      path: '/api/echo-host',
+      handler: (req, res) => { res.writeHead(200); res.end(req.headers.host ?? '') },
+    })
+  }
+
+  it('off (default): an authenticated /api request keeps its original Host downstream', async () => {
+    const port = await boot()
+    mountEchoHost()
+    const cookie = await login(port)
+    const echoed = await rawRequest(port, '/api/echo-host', {
+      headers: { host: 'ds.example.com', cookie },
+    })
+    expect(echoed.body).toBe('ds.example.com')
+  })
+
+  it('on: an authenticated /api request is presented to downstream with a loopback Host', async () => {
+    // Trust the domain so its /api/auth requests pass the browser-trust fence;
+    // key management must still refuse them for not being loopback.
+    const port = await boot({ allowRemoteAdmin: true, trustedHosts: ['ds.example.com'] })
+    mountEchoHost()
+    const cookie = await login(port)
+    const echoed = await rawRequest(port, '/api/echo-host', {
+      headers: { host: 'ds.example.com', cookie },
+    })
+    expect(echoed.body).toBe(`127.0.0.1:${port}`)
+
+    // Key management stays host-machine-only even with the flag on and the Host
+    // trusted: /api/auth is exempt from the rewrite and still judges the real Host.
+    const remoteManage = await rawRequest(port, '/api/auth/add-key', {
+      method: 'POST',
+      headers: { host: 'ds.example.com', 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ key: 'should-be-refused-key' }),
+    })
+    expect(remoteManage.status).toBe(403)
+    expect(remoteManage.body).toContain('loopback-only')
+  })
+
+  it('on: an unauthenticated /api request is still refused (no rewrite before auth)', async () => {
+    const port = await boot({ allowRemoteAdmin: true })
+    mountEchoHost()
+    const anon = await rawRequest(port, '/api/echo-host', { headers: { host: 'ds.example.com' } })
+    expect(anon.status).toBe(401)
   })
 })
 

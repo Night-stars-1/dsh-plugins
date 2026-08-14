@@ -64,6 +64,18 @@ export interface Config {
   sessionTtlMs: number
   /** Non-loopback authorities admitted by the /api/auth fence; the connection plugin's bare `host[:port]` trustedHosts vocabulary. */
   trustedHosts: string[]
+  /**
+   * Open dsh's loopback-pinned privileged /api methods (settings,
+   * credentials, directory picking, preset authoring) to authenticated
+   * remote sessions by presenting a loopback Host to the downstream handler.
+   * The rewrite happens only after this guard confirms a valid session
+   * cookie, and only for the request object passed downstream; the guard's
+   * own decisions (including /api/auth key management) read the original
+   * Host, so key management stays host-machine-only regardless. Default off:
+   * with it off, remote key holders can chat but cannot read or change the
+   * deployment's configuration.
+   */
+  allowRemoteAdmin: boolean
 }
 
 /** Loader validation for {@link Config}. */
@@ -71,6 +83,7 @@ export const Config: z<Config> = z.object({
   accessKeys: z.array(z.string()).default([]),
   sessionTtlMs: z.natural().min(1000).required(),
   trustedHosts: z.array(z.string()).default([]),
+  allowRemoteAdmin: z.boolean().default(false),
 })
 
 /**
@@ -330,11 +343,24 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     req.headers['sec-fetch-mode'] === 'navigate'
     || (typeof req.headers.accept === 'string' && req.headers.accept.includes('text/html'))
 
+  // allowRemoteAdmin 开启时，为已认证的 /api 请求呈现回环 Host，
+  // 使 dsh 钉在回环的特权方法接受它。从已绑定的 server 读取端口以匹配实际监听。
+  const loopbackAuthority = (): string => `127.0.0.1:${ctx.webServer.port}`
+
   const guard: AdmissionGuard = {
     request(req: IncomingMessage, res: ServerResponse): boolean {
       const pathname = requestPathname(req)
+      // /api/auth（密钥管理、登录）在豁免区，始终保留真实 Host，
+      // 其 loopback-only 检查不受下面的重写影响。
       if (isExemptPath(pathname)) return true
-      if (authenticated(req)) return true
+      if (authenticated(req)) {
+        // 仅在确认有效会话后、且仅对 /api 请求，才呈现回环 Host，
+        // 让 dsh 的特权面接受这个已认证的调用者。默认关闭。
+        if (config.allowRemoteAdmin && isApiPath(pathname)) {
+          req.headers.host = loopbackAuthority()
+        }
+        return true
+      }
       if (isApiPath(pathname)) {
         sendJson(res, 401, errorBody('unauthenticated'))
         return false

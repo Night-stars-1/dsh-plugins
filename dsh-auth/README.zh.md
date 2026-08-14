@@ -33,7 +33,9 @@ dsh plugin --profile web add link:/Users/nightstar/Desktop/code/dsh-plugins/dsh-
         trustedHosts: !!js ctx.webRuntime.trustedHosts
 ```
 
-配置项：`accessKeys`（默认 `[]`；可选的固定密钥，每个至少 8 位——用 `!!js [process.env.DSH_WEB_ACCESS_KEY]` 表达式可避免把明文写进文件）、`sessionTtlMs`（必填，毫秒）、`trustedHosts`（默认 `[]`；与 connection 插件相同的裸 `host[:port]` 词汇，加载时校验）。
+配置项：`accessKeys`（默认 `[]`；可选的固定密钥，每个至少 8 位——用 `!!js [process.env.DSH_WEB_ACCESS_KEY]` 表达式可避免把明文写进文件）、`sessionTtlMs`（必填，毫秒）、`trustedHosts`（默认 `[]`；与 connection 插件相同的裸 `host[:port]` 词汇，加载时校验）、`allowRemoteAdmin`（默认 `false`；见下）。
+
+**远程管理（`allowRemoteAdmin`）。**dsh 把特权 `/api` 方法——设置、凭据、目录选择、preset 管理——钉在回环 Host 上，因此在反向代理后面，设置面板和模型配置会对远程用户返回 `HTTP 403`，但聊天正常。设为 `allowRemoteAdmin: true` 即向**已认证**会话开放该特权面：guard 确认会话 cookie 后，对 `/api` 请求向下游呈现回环 Host。这会主动放弃 dsh 的回环安全默认值，需权衡——此后每个持钥人都能读取凭据（模型 API key）并修改配置。密钥管理（`/api/auth`）豁免于该重写、始终按真实 Host 判定，因此增删访问密钥无论如何都仅限服务器本机。无需重写的替代方案：SSH 端口转发（`ssh -L 8080:127.0.0.1:8080 服务器`）或 Tailscale，它们呈现真正的回环/私网 Host，开关保持关闭即可解锁特权面。
 
 **密钥管理。**设置面板的"访问密钥"分区（由本包的浏览器半边提供）列出全部密钥——页面管理的密钥带备注、创建时间与**最后使用时间**（每次登录成功即刷新；配置文件密钥以只读方式列出，按摘要记录最后使用）——并支持添加与删除页面密钥。当任何地方都没有配置密钥时，从本机首次访问 `/login` 会改为引导设置。管理调用 `GET /api/auth/keys`、`POST /api/auth/add-key` 与 `POST /api/auth/remove-key`，全部**仅限回环**（受信任的 LAN 主机能通过栅栏但会得到 403 `loopback-only`），且在首次设置之后要求有效会话。页面密钥（至多 20 个，重复即拒绝）以 SHA-256 摘要存入 `web_access` domain——绝不存明文。删除密钥即吊销它的新登录；已有会话保留到退出或过期——要一次吊销全部会话与页面密钥，删除 `~/.dsh/storages/web_access.json` 即可。
 
