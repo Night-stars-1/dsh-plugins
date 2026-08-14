@@ -4,6 +4,14 @@
 set -euo pipefail
 
 export DSH_HOME="${DSH_HOME:-/data/.dsh}"
+# 目录选择器默认从 os.homedir() 开始浏览；把 HOME 指到 /workspace，
+# 让"选择工作区"默认就落在挂载的工作区目录。
+export HOME=/workspace
+# pnpm/npm 按 XDG 写缓存与配置；重定向到 /data，避免污染工作区。
+export XDG_DATA_HOME=/data/xdg-data
+export XDG_CACHE_HOME=/data/xdg-cache
+export XDG_CONFIG_HOME=/data/xdg-config
+mkdir -p /workspace "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_CONFIG_HOME"
 PROFILE_DIR="$DSH_HOME/profiles/web"
 mkdir -p "$PROFILE_DIR"
 
