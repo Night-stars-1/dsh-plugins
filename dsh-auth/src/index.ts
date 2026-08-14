@@ -5,11 +5,13 @@
  * and issues a hashed session token in the `web_access` storage domain plus
  * the HttpOnly SameSite=Strict `dsh_auth` cookie; there is no registration
  * and no account data. Every successful login stamps the matched key's last
- * use. Key management (/api/auth/keys, add-key, remove-key) is
- * loopback-only: first-run add-key needs no session because none can exist,
- * and afterwards a live session is required. The served /login page drives
- * login and first-run setup; the browser half's settings section manages the
- * key list. An admission guard mounted over the stock webserver
+ * use. Key management (/api/auth/keys, add-key, remove-key) is allowed from
+ * the host machine (loopback) or from a session granted by a deployment-config
+ * key; a page-key session cannot manage keys remotely. First-run add-key needs
+ * no session because none can exist, and afterwards a live session is
+ * required. The served /login page drives login and first-run setup; the
+ * browser half's settings section manages the key list. An admission guard
+ * mounted over the stock webserver
  * ({@link mountGuard}, listener wrapping) refuses unauthenticated /api
  * requests (401) and upgrades and redirects unauthenticated HTML navigations
  * to /login, while static assets stay open so the login page and app shell
@@ -129,12 +131,20 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     return token === '' ? undefined : token
   }
 
-  const authenticated = (req: IncomingMessage): boolean => {
+  /** Which key kind granted the live session, or undefined when unsigned. */
+  const sessionVia = (req: IncomingMessage): 'config' | 'page' | undefined => {
     const token = cookieToken(req)
-    if (token === undefined) return false
+    if (token === undefined) return undefined
     const record = tokens.get(tokenKey(token))
-    return record !== undefined && record.expiresAt > Date.now()
+    if (record === undefined || record.expiresAt <= Date.now()) return undefined
+    return record.via === 'config' ? 'config' : 'page'
   }
+
+  const authenticated = (req: IncomingMessage): boolean => sessionVia(req) !== undefined
+
+  /** Key management is open to the host machine or a config-key session. */
+  const canManage = (req: IncomingMessage): boolean =>
+    isLoopbackRequest(req) || sessionVia(req) === 'config'
 
   const sweepExpiredTokens = async (): Promise<void> => {
     const now = Date.now()
@@ -142,10 +152,10 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     for (const [key] of expired) await tokens.delete(key)
   }
 
-  const issueSession = async (res: ServerResponse): Promise<void> => {
+  const issueSession = async (res: ServerResponse, via: 'config' | 'page'): Promise<void> => {
     await sweepExpiredTokens()
     const token = randomBytes(TOKEN_BYTES).toString('base64url')
-    await tokens.put(tokenKey(token), { expiresAt: Date.now() + config.sessionTtlMs })
+    await tokens.put(tokenKey(token), { expiresAt: Date.now() + config.sessionTtlMs, via })
     res.setHeader('set-cookie', authCookie(token, Math.floor(config.sessionTtlMs / 1000)))
   }
 
@@ -155,14 +165,14 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     return false
   }
 
-  /** Shared admission for key management: POST + loopback + (session unless first-run). */
+  /** Shared admission for key management: POST + (loopback or config-key session) + (session unless first-run). */
   const admitManagement = (req: IncomingMessage, res: ServerResponse): boolean => {
     if (!admit(req, res)) return false
     if (req.method !== 'POST') {
       sendJson(res, 405, errorBody('method-not-allowed'))
       return false
     }
-    if (!isLoopbackRequest(req)) {
+    if (!canManage(req)) {
       sendJson(res, 403, errorBody('loopback-only'))
       return false
     }
@@ -197,7 +207,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       return
     }
     await recordUse(match)
-    await issueSession(res)
+    await issueSession(res, match.kind)
     sendJson(res, 200, { authenticated: true })
   }
 
@@ -237,9 +247,9 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     sendJson(res, 200, {
       authenticated: signedIn,
       needsSetup,
-      // Key management stays host-machine-only, and (past first-run setup)
-      // requires a live session.
-      canManageKey: isLoopbackRequest(req) && (signedIn || needsSetup),
+      // Key management is open to the host machine or a config-key session,
+      // and (past first-run setup) requires a live session.
+      canManageKey: canManage(req) && (signedIn || needsSetup),
     })
   }
 
@@ -249,7 +259,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       sendJson(res, 405, errorBody('method-not-allowed'))
       return
     }
-    if (!isLoopbackRequest(req)) {
+    if (!canManage(req)) {
       sendJson(res, 403, errorBody('loopback-only'))
       return
     }

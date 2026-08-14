@@ -31,7 +31,7 @@ interface KeysView {
 }
 
 const MESSAGES: Record<string, string> = {
-  'loopback-only': '只能在运行 dsh 的本机上管理密钥',
+  'loopback-only': '需在本机操作，或用配置文件密钥登录',
   'weak-key': '密钥至少需要 8 个字符',
   'invalid-request': '请求格式不正确',
   'unauthenticated': '登录已过期，请刷新页面重新登录',
@@ -147,12 +147,12 @@ export function AccessKeySection(): React.JSX.Element {
       <h3 style={styles.title}>访问密钥</h3>
       <p style={styles.hint}>
         访问该 Web 界面需要密钥登录。可以添加多个密钥（例如按人发放，删除即吊销新登录），每个密钥记录最近一次登录时间；
-        密钥以 SHA-256 摘要存储，绝不保存明文。管理仅限在运行 dsh 的本机上进行。
+        密钥以 SHA-256 摘要存储，绝不保存明文。管理需在运行 dsh 的本机上进行，或用配置文件密钥登录后进行。
       </p>
       {status === undefined ? (
         <p style={styles.hint}>正在读取状态…</p>
       ) : !status.canManageKey ? (
-        <p style={styles.hint}>只能在运行 dsh 的本机上管理密钥。</p>
+        <p style={styles.hint}>需在本机操作，或用配置文件密钥登录后才能管理密钥。</p>
       ) : (
         <>
           <table style={styles.table}>

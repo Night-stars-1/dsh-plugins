@@ -2,8 +2,9 @@
  * Durable storage-domain declaration for access-key sessions: one `tokens`
  * table keyed by the SHA-256 digest of the bearer token, so a copied medium
  * never yields a usable session. No account data exists — admission is
- * decided against the configured access keys, and a token records only its
- * own expiry.
+ * decided against the configured access keys, and a token records its own
+ * expiry plus which key kind granted it (a config-key session may manage
+ * keys remotely; a page-key session may not).
  * @module @night-stars-1/dsh-host-auth/src/spec
  */
 
@@ -17,6 +18,7 @@ const nonNegativeSafeInteger = z.number().int().nonnegative().max(Number.MAX_SAF
 /** Runtime schema for one live session-token record. */
 export const webAccessTokenRecordSchema = z.object({
   expiresAt: nonNegativeSafeInteger,
+  via: z.enum(['config', 'page']).optional(),
 })
 
 /** One live session token as stored on the medium. */

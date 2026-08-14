@@ -325,6 +325,49 @@ describe('page-managed keys', () => {
   })
 })
 
+describe('key management grants', () => {
+  it('admits a config-key session to remote management', async () => {
+    const port = await boot({ trustedHosts: ['harness.internal'] })
+    const cookie = await login(port, RIGHT_KEY)
+
+    const status = await rawRequest(port, '/api/auth/status', {
+      headers: { host: 'harness.internal:9999', cookie },
+    })
+    expect(status.body).toContain('"canManageKey":true')
+
+    const add = await rawRequest(port, '/api/auth/add-key', {
+      method: 'POST',
+      headers: { host: 'harness.internal:9999', 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ key: 'added-remotely-1' }),
+    })
+    expect(add.status).toBe(200)
+
+    const keys = await rawRequest(port, '/api/auth/keys', {
+      headers: { host: 'harness.internal:9999', cookie },
+    })
+    expect(keys.status).toBe(200)
+  })
+
+  it('keeps a page-key session from remote management', async () => {
+    const port = await boot({ accessKeys: [], trustedHosts: ['harness.internal'] })
+    await callJson(port, '/api/auth/add-key', { method: 'POST', body: { key: 'page-key-99999', label: 'p' } })
+    const cookie = await login(port, 'page-key-99999')
+
+    const add = await rawRequest(port, '/api/auth/add-key', {
+      method: 'POST',
+      headers: { host: 'harness.internal:9999', 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ key: 'should-not-add-1' }),
+    })
+    expect(add.status).toBe(403)
+    expect(add.body).toContain('loopback-only')
+
+    const keys = await rawRequest(port, '/api/auth/keys', {
+      headers: { host: 'harness.internal:9999', cookie },
+    })
+    expect(keys.status).toBe(403)
+  })
+})
+
 describe('allowRemoteAdmin', () => {
   // Register an /api route that echoes the Host the guard passed downstream.
   function mountEchoHost(): void {
@@ -346,8 +389,6 @@ describe('allowRemoteAdmin', () => {
   })
 
   it('on: an authenticated /api request is presented to downstream with a loopback Host', async () => {
-    // Trust the domain so its /api/auth requests pass the browser-trust fence;
-    // key management must still refuse them for not being loopback.
     const port = await boot({ allowRemoteAdmin: true, trustedHosts: ['ds.example.com'] })
     mountEchoHost()
     const cookie = await login(port)
@@ -356,15 +397,14 @@ describe('allowRemoteAdmin', () => {
     })
     expect(echoed.body).toBe(`127.0.0.1:${port}`)
 
-    // Key management stays host-machine-only even with the flag on and the Host
-    // trusted: /api/auth is exempt from the rewrite and still judges the real Host.
+    // A config-key session may manage keys from a trusted remote Host:
+    // /api/auth is exempt from the rewrite and admits the config-key grant.
     const remoteManage = await rawRequest(port, '/api/auth/add-key', {
       method: 'POST',
       headers: { host: 'ds.example.com', 'content-type': 'application/json', cookie },
-      body: JSON.stringify({ key: 'should-be-refused-key' }),
+      body: JSON.stringify({ key: 'remote-added-key-0' }),
     })
-    expect(remoteManage.status).toBe(403)
-    expect(remoteManage.body).toContain('loopback-only')
+    expect(remoteManage.status).toBe(200)
   })
 
   it('on: rewrites an attached Origin to match the loopback Host', async () => {
