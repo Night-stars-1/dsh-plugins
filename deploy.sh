@@ -112,10 +112,15 @@ case "$cmd" in
     echo "健康检查: GET /login -> ${code:-无响应}"
     ;;
   update)
+    # 重新下载构建文件、重建镜像，并把插件升级到 npm 最新版（保留数据卷）。
+    # DSH_PLUGIN_UPDATE=1 只对这一次启动生效；随后 --force-recreate 用不带该
+    # 变量的常规环境重建容器，避免每次重启都触发升级。
     fetch_build_files force
-    docker compose up -d --build
+    DSH_PLUGIN_UPDATE=1 docker compose up -d --build
     wait_ready "$(port)"
-    echo "[deploy] 已更新并重启"
+    docker compose up -d --force-recreate
+    wait_ready "$(port)"
+    echo "[deploy] 已更新（镜像 + 插件最新版）并重启"
     ;;
   destroy)  docker compose down -v ;;
   *)

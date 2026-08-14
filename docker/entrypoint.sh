@@ -21,6 +21,11 @@ if ! plugin_resolves; then
   echo "[entrypoint] 正在把 $PKG 从 npm 装进 web profile"
   dsh plugin --profile web add "$PKG" --config.auto-install-peers=false
   plugin_resolves || { echo "[entrypoint] 插件安装后仍无法解析，终止" >&2; exit 1; }
+elif [ "${DSH_PLUGIN_UPDATE:-}" = "1" ]; then
+  # 强制把插件升级到 npm 最新版；数据卷上的密钥、会话、补丁都保留。
+  echo "[entrypoint] 将 $PKG 升级到 npm 最新版"
+  dsh plugin --profile web add "$PKG@latest" --config.auto-install-peers=false
+  plugin_resolves || { echo "[entrypoint] 插件升级后仍无法解析，终止" >&2; exit 1; }
 fi
 
 PATCH="$PROFILE_DIR/cordis.patch.yml"

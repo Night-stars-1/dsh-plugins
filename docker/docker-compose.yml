@@ -18,6 +18,9 @@ services:
       # 局域网/公网访问时额外信任的主机，空格分隔，
       # 例如 "192.168.1.5:8080 chat.example.com"。
       DSH_TRUSTED_HOSTS: ${DSH_TRUSTED_HOSTS:-}
+      # 设为 1 时，容器启动会把插件升级到 npm 最新版（保留数据）。
+      # deploy.sh update 会临时置 1 跑一次；平时留空。
+      DSH_PLUGIN_UPDATE: ${DSH_PLUGIN_UPDATE:-}
     restart: unless-stopped
 
 volumes:
