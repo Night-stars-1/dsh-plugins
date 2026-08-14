@@ -8,8 +8,9 @@ services:
     volumes:
       # Harness 主目录：访问密钥、会话、设置、web profile。
       - dsh-data:/data
-      # agent 工作区：把想让 agent 操作的宿主机目录挂到这里。
-      - ./workspace:/workspace
+      # agent 工作区：目录选择器默认从容器 home（/root）开始浏览，
+      # 因此直接挂到 /root，工作区文件会出现在选择器首页。
+      - ./workspace:/root
     environment:
       # 模型访问（聊天必需）。
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
