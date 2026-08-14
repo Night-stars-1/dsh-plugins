@@ -6,6 +6,13 @@ const MOBILE_MENU_BACKDROP_ID = 'dsh-host-auth-mobile-menu-backdrop'
 const MOBILE_HEADER_FALLBACK_ID = 'dsh-host-auth-mobile-header-fallback'
 
 export const MOBILE_SHELL_CSS = `
+/* Hidden by default; the mobile media query re-enables the drawer controls. */
+#${MOBILE_MENU_BUTTON_ID},
+#${MOBILE_HEADER_FALLBACK_ID},
+#${MOBILE_MENU_BACKDROP_ID} {
+  display: none;
+}
+
 @media (max-width: 767px) {
   /* The closed drawer must not reserve a desktop sidebar column. */
   [data-dsh-mobile-shell] {
@@ -158,6 +165,22 @@ export const MOBILE_SHELL_CSS = `
     padding: 0 !important;
     align-items: center !important;
     gap: 4px !important;
+  }
+
+  /* Narrow the transcript side clearance so chat content uses more width.
+     Targets the ChatView scrollport (contains the chat flow column). */
+  [class$="scroll"]:has(> [data-chat-flow]) {
+    --dsh-composer-side-clearance: 4px;
+  }
+
+  /* Let the message time/stats label wrap instead of overflowing. */
+  [class$="timeEnd"] {
+    white-space: normal !important;
+  }
+
+  [class$="actions"]:has(> [class$="timeEnd"]) {
+    height: auto !important;
+    flex-wrap: wrap !important;
   }
 }
 `
