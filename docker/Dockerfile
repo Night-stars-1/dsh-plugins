@@ -3,8 +3,6 @@
 # 数据卷上的 profile。
 
 FROM node:22
-RUN apt-get update && apt-get install -y --no-install-recommends socat \
-  && rm -rf /var/lib/apt/lists/*
 # dsh CLI + 它的 `dsh plugin` 子命令所调用的 pnpm。
 ARG DSH_VERSION=0.1.0-rc.6
 RUN npm install -g pnpm@11 @deepseek-ai/dsh@${DSH_VERSION}
@@ -13,7 +11,8 @@ RUN chmod +x /entrypoint.sh
 # Harness 主目录（密钥、会话、profile）放在 /data 数据卷上。
 ENV DSH_HOME=/data/.dsh
 VOLUME /data
-# dsh 本体只监听 127.0.0.1:3080；入口脚本用 socat 把 0.0.0.0:8080 桥接
-# 过去，Host 头原样透传——因此插件"仅限回环的密钥管理"只对宿主机浏览器开放。
-EXPOSE 8080
+# profile 补丁把 webserver 改为绑定 0.0.0.0:3080（组合层配置，schema 支持），
+# 端口映射直接对接它；访问控制由 dsh-auth 的密钥门禁承担，
+# 密钥管理仍按 Host 头限定为仅限回环（即仅宿主机浏览器）。
+EXPOSE 3080
 ENTRYPOINT ["/entrypoint.sh"]

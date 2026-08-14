@@ -4,7 +4,7 @@ services:
   dsh:
     build: .
     ports:
-      - "${DSH_PORT:-8080}:8080"
+      - "${DSH_PORT:-8080}:3080"
     volumes:
       # Harness 主目录：访问密钥、会话、设置、web profile。
       - dsh-data:/data
