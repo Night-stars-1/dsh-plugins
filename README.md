@@ -33,3 +33,7 @@ bash deploy.sh destroy    # 移除容器和全部数据
 | [`dsh-auth/`](dsh-auth/README.zh.md) | [`@night-stars-1/dsh-host-auth`](https://www.npmjs.com/package/@night-stars-1/dsh-host-auth) | Web GUI 访问密钥门禁：`/login` 密钥登录、`/api` 会话门禁、多密钥管理（备注 + 最后使用时间）、设置面板管理界面 |
 
 每个插件目录自带构建与测试（`pnpm install && pnpm run build && pnpm test`），依赖全部来自 npm registry，不需要本地的 deepseek-harness 检出。
+
+## 鸣谢
+
+[LINUX DO](https://linux.do/)提供的交流社区
