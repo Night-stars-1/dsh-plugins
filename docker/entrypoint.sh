@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Container entry: install the dsh-auth plugin into the volume-backed profile
-# (idempotent), seed the profile patch on first boot, bridge the public port
-# to dsh's loopback bind, then run the web UI.
+# Container entry: install the auth plugin from npm into the volume-backed
+# profile (idempotent), seed the profile patch on first boot, bridge the
+# public port to dsh's loopback bind, then run the web UI.
 set -euo pipefail
 
 export DSH_HOME="${DSH_HOME:-/data/.dsh}"
@@ -9,8 +9,8 @@ PROFILE_DIR="$DSH_HOME/profiles/web"
 mkdir -p "$PROFILE_DIR"
 
 if [ ! -e "$PROFILE_DIR/node_modules/@night-stars-1/dsh-host-auth" ]; then
-  echo "[entrypoint] installing dsh-auth into the web profile"
-  dsh plugin --profile web add link:/opt/dsh-auth --config.auto-install-peers=false
+  echo "[entrypoint] installing @night-stars-1/dsh-host-auth into the web profile"
+  dsh plugin --profile web add @night-stars-1/dsh-host-auth --config.auto-install-peers=false
 fi
 
 PATCH="$PROFILE_DIR/cordis.patch.yml"
