@@ -6,17 +6,17 @@ services:
     ports:
       - "${DSH_PORT:-8080}:8080"
     volumes:
-      # Harness home: access keys, sessions, settings, the web profile.
+      # Harness 主目录：访问密钥、会话、设置、web profile。
       - dsh-data:/data
-      # Agent workspace: mount host directories you want the agent to work in.
+      # agent 工作区：把想让 agent 操作的宿主机目录挂到这里。
       - ./workspace:/workspace
     environment:
-      # Model access (required for chatting).
+      # 模型访问（聊天必需）。
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-      # Optional fixed access key(s), space-separated; page-managed keys work without it.
+      # 可选的固定访问密钥（空格分隔可多个）；不设也可以用页面管理的密钥。
       DSH_WEB_ACCESS_KEY: ${DSH_WEB_ACCESS_KEY:-}
-      # Space-separated extra authorities for LAN/public access,
-      # e.g. "192.168.1.5:8080 chat.example.com".
+      # 局域网/公网访问时额外信任的主机，空格分隔，
+      # 例如 "192.168.1.5:8080 chat.example.com"。
       DSH_TRUSTED_HOSTS: ${DSH_TRUSTED_HOSTS:-}
     restart: unless-stopped
 
