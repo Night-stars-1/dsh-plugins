@@ -6,6 +6,7 @@
  */
 
 import { AccessKeySection } from './AccessKeySection.tsx'
+import { installMobileShellStyles } from './mobile-shell.ts'
 
 /** Minimal structural view of the client context this plugin touches. */
 interface ClientSlots {
@@ -27,6 +28,7 @@ export const inject = ['slots']
  * @param ctx - client cordis context carrying the slot registry.
  */
 export function apply(ctx: ClientContext): void {
+  installMobileShellStyles()
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'host-auth',
