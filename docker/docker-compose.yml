@@ -1,0 +1,24 @@
+services:
+  dsh:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      # Harness home: access keys, sessions, settings, the web profile.
+      - dsh-data:/data
+      # Agent workspace: mount host directories you want the agent to work in.
+      - ./workspace:/workspace
+    environment:
+      # Model access (required for chatting).
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      # Optional fixed access key; page-managed keys work without it.
+      DSH_WEB_ACCESS_KEY: ${DSH_WEB_ACCESS_KEY:-}
+      # Space-separated extra authorities for LAN/public access,
+      # e.g. "192.168.1.5:8080 chat.example.com".
+      DSH_TRUSTED_HOSTS: ${DSH_TRUSTED_HOSTS:-}
+    restart: unless-stopped
+
+volumes:
+  dsh-data:
