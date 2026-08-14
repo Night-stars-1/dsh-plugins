@@ -2,7 +2,7 @@
 # @night-stars-1/dsh-host-auth 插件由入口脚本在首次启动时装进
 # 数据卷上的 profile。
 
-FROM node:22
+FROM node:24
 # dsh CLI + 它的 `dsh plugin` 子命令所调用的 pnpm。
 ARG DSH_VERSION=0.1.0-rc.6
 RUN npm install -g pnpm@11 @deepseek-ai/dsh@${DSH_VERSION}
