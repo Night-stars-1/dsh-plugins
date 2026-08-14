@@ -7,9 +7,20 @@ export DSH_HOME="${DSH_HOME:-/data/.dsh}"
 PROFILE_DIR="$DSH_HOME/profiles/web"
 mkdir -p "$PROFILE_DIR"
 
-if [ ! -e "$PROFILE_DIR/node_modules/@night-stars-1/dsh-host-auth" ]; then
-  echo "[entrypoint] 正在把 @night-stars-1/dsh-host-auth 装进 web profile"
-  dsh plugin --profile web add @night-stars-1/dsh-host-auth --config.auto-install-peers=false
+PKG='@night-stars-1/dsh-host-auth'
+plugin_resolves() {
+  node -e "require.resolve('$PKG/package.json', { paths: ['$PROFILE_DIR'] })" >/dev/null 2>&1
+}
+if ! plugin_resolves; then
+  # 清理旧镜像时代遗留的 link: 安装记录（其目标目录已不存在），否则
+  # pnpm 会认为依赖已满足而跳过真正的 npm 安装。
+  if grep -q "\"$PKG\": \"link:" "$PROFILE_DIR/package.json" 2>/dev/null; then
+    echo "[entrypoint] 清理陈旧的 link: 安装记录"
+    dsh plugin --profile web remove "$PKG" || true
+  fi
+  echo "[entrypoint] 正在把 $PKG 从 npm 装进 web profile"
+  dsh plugin --profile web add "$PKG" --config.auto-install-peers=false
+  plugin_resolves || { echo "[entrypoint] 插件安装后仍无法解析，终止" >&2; exit 1; }
 fi
 
 PATCH="$PROFILE_DIR/cordis.patch.yml"
