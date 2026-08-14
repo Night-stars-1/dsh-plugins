@@ -1,7 +1,7 @@
 {
   "name": "@night-stars-1/dsh-host-auth",
   "description": "Third-party dsh Web account plugin: /api/auth register/login endpoints, durable scrypt-hashed users via storage-domain, cookie sessions, a served /login page, and the webServer guard gating /api",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "author": "Night-stars-1",
   "repository": {
     "type": "git",
