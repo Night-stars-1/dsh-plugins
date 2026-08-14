@@ -63,9 +63,11 @@ fi
 
 # 兼容旧数据卷：host-auth 块缺少 allowRemoteAdmin 行时，在 sessionTtlMs 后补上
 # （表达式读 DSH_ALLOW_REMOTE_ADMIN，值仍由环境变量控制）。幂等：已有则跳过。
+# 用 awk 逐行插入而非 sed，避免替换串里的 | 与 () 与分隔符/正则冲突。
 if grep -q "id: host-auth" "$PATCH" && ! grep -q "allowRemoteAdmin:" "$PATCH"; then
   echo "[entrypoint] 迁移旧补丁：补上 allowRemoteAdmin 配置行"
-  sed -i "s|\(sessionTtlMs: 604800000\)|\1\n        allowRemoteAdmin: !!js (['1','true','yes','on'].indexOf((process.env.DSH_ALLOW_REMOTE_ADMIN || '').toLowerCase()) >= 0)|" "$PATCH"
+  ADMIN_LINE="        allowRemoteAdmin: !!js (['1','true','yes','on'].indexOf((process.env.DSH_ALLOW_REMOTE_ADMIN || '').toLowerCase()) >= 0)"
+  awk -v line="$ADMIN_LINE" '{print} /sessionTtlMs: 604800000/{print line}' "$PATCH" > "$PATCH.tmp" && mv "$PATCH.tmp" "$PATCH"
 fi
 
 # 全接口绑定块：让 dsh 直接监听 0.0.0.0:3080，端口映射即可到达（无需 socat）。
