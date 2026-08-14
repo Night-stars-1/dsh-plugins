@@ -69,21 +69,6 @@ if [ ! -s "$PATCH" ] || grep -qx '\[\]' "$PATCH"; then
 YAML
 fi
 
-# 全接口绑定块：让 dsh 直接监听 0.0.0.0:3080，端口映射即可到达（无需 socat）。
-# 单独检测并追加，兼容旧数据卷里没有这一块的补丁。
-if ! grep -q "id: webserver" "$PATCH"; then
-  echo "[entrypoint] 追加 webserver 全接口绑定配置"
-  cat >> "$PATCH" <<'YAML'
-
-# dsh 绑定容器全接口（组合层配置，配置 schema 本身支持 0.0.0.0）；
-# 访问控制由上面的密钥门禁承担，密钥管理仍按 Host 头限定为仅限回环。
-- id: webserver
-  config:
-    host: '0.0.0.0'
-    port: 3080
-YAML
-fi
-
 TRUST_ARGS=()
 for authority in ${DSH_TRUSTED_HOSTS:-}; do
   TRUST_ARGS+=(--trusted-host "$authority")
