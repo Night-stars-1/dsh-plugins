@@ -23,8 +23,16 @@ if ! plugin_resolves; then
   plugin_resolves || { echo "[entrypoint] 插件安装后仍无法解析，终止" >&2; exit 1; }
 elif [ "${DSH_PLUGIN_UPDATE:-}" = "1" ]; then
   # 强制把插件升级到 npm 最新版；数据卷上的密钥、会话、补丁都保留。
+  # 直接向 registry 查询 latest 的精确版本号再 pin 安装：pnpm 对 `@latest`
+  # 标签的元数据缓存会把「最新版」解析成旧版，pin 精确版本绕开该缓存。
   echo "[entrypoint] 将 $PKG 升级到 npm 最新版"
-  dsh plugin --profile web add "$PKG@latest" --config.auto-install-peers=false
+  LATEST_VERSION="$(node -e 'const p=process.argv[1];fetch("https://registry.npmjs.org/"+p.replace("/","%2F")+"/latest").then(r=>r.ok?r.json():Promise.reject(new Error(String(r.status)))).then(j=>console.log(j.version)).catch(()=>process.exit(1))' "$PKG" 2>/dev/null || true)"
+  if [ -z "$LATEST_VERSION" ]; then
+    echo "[entrypoint] 查询 $PKG 最新版本失败，终止" >&2
+    exit 1
+  fi
+  echo "[entrypoint] 最新版本：$LATEST_VERSION"
+  dsh plugin --profile web add "$PKG@$LATEST_VERSION" --config.auto-install-peers=false
   plugin_resolves || { echo "[entrypoint] 插件升级后仍无法解析，终止" >&2; exit 1; }
 fi
 
