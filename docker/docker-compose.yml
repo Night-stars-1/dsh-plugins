@@ -25,6 +25,9 @@ services:
       # 设为 true/1/yes/on 时，已认证的远程会话可访问设置/凭据等特权面
       # （密钥管理仍仅限本机）。改后执行 bash deploy.sh restart 生效。
       DSH_ALLOW_REMOTE_ADMIN: ${DSH_ALLOW_REMOTE_ADMIN:-}
+      # 设为 true/1/yes/on 时，已认证的远程会话可管理 MCP 服务器
+      # （默认关闭 = 仅限服务器本机）。
+      DSH_ALLOW_REMOTE_MANAGE: ${DSH_ALLOW_REMOTE_MANAGE:-}
     restart: unless-stopped
 
 volumes:

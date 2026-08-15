@@ -63,6 +63,8 @@ DSH_TRUSTED_HOSTS=${DSH_TRUSTED_HOSTS:-}
 # 设为 true 时，已认证的远程会话可访问设置/凭据等特权面（密钥管理仍仅限本机）。
 # 会削弱 dsh 的回环安全默认值——务必配合强密钥与 HTTPS 使用。
 DSH_ALLOW_REMOTE_ADMIN=${DSH_ALLOW_REMOTE_ADMIN:-}
+# 设为 true 时，已认证的远程会话可管理 MCP 服务器（默认仅限本机）。
+DSH_ALLOW_REMOTE_MANAGE=${DSH_ALLOW_REMOTE_MANAGE:-}
 # 对外发布的端口。
 DSH_PORT=${DSH_PORT:-8080}
 EOF
